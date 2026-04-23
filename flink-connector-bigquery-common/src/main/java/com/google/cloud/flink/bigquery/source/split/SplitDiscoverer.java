@@ -18,6 +18,13 @@ package com.google.cloud.flink.bigquery.source.split;
 
 import org.apache.flink.annotation.Internal;
 
+import com.google.cloud.bigquery.QueryJobConfiguration.Priority;
+import com.google.cloud.bigquery.Table;
+import com.google.cloud.bigquery.TableDefinition;
+import com.google.cloud.bigquery.TableId;
+import com.google.cloud.bigquery.TableInfo;
+import com.google.cloud.bigquery.ViewDefinition;
+import com.google.cloud.bigquery.connector.common.BigQueryClient;
 import com.google.cloud.bigquery.storage.v1.CreateReadSessionRequest;
 import com.google.cloud.bigquery.storage.v1.DataFormat;
 import com.google.cloud.bigquery.storage.v1.ReadSession;
@@ -70,12 +77,47 @@ public class SplitDiscoverer {
                 BigQueryServicesFactory.instance(connectionOptions).storageRead()) {
             String parent = String.format("projects/%s", connectionOptions.getProjectId());
 
-            String srcTable =
-                    String.format(
-                            "projects/%s/datasets/%s/tables/%s",
+            BigQueryServices.QueryDataClient queryClient =
+                    BigQueryServicesFactory.instance(connectionOptions).queryClient();
+            com.google.cloud.bigquery.BigQuery bigQuery = queryClient.getBigQuery();
+
+            TableId targetTableId =
+                    TableId.of(
                             connectionOptions.getProjectId(),
                             connectionOptions.getDataset(),
                             connectionOptions.getTable());
+            Table table = bigQuery.getTable(targetTableId);
+
+            if (table != null && table.getDefinition().getType() == TableDefinition.Type.VIEW) {
+                LOG.info(
+                        "Target table {} is a View. Materializing to a temporary table.",
+                        targetTableId);
+                ViewDefinition viewDef = table.getDefinition();
+                String querySql = viewDef.getQuery();
+
+                BigQueryClient bqClient =
+                        new BigQueryClient(
+                                bigQuery,
+                                Optional.empty(),
+                                Optional.empty(),
+                                com.google.common.cache.CacheBuilder.newBuilder().build(),
+                                new java.util.HashMap<>(),
+                                Priority.INTERACTIVE,
+                                Optional.empty(),
+                                10);
+
+                TableInfo materializedTableInfo =
+                        bqClient.materializeViewToTable(querySql, targetTableId, 1440);
+                targetTableId = materializedTableInfo.getTableId();
+                LOG.info("Materialized view to temporary table: {}", targetTableId);
+            }
+
+            String srcTable =
+                    String.format(
+                            "projects/%s/datasets/%s/tables/%s",
+                            targetTableId.getProject(),
+                            targetTableId.getDataset(),
+                            targetTableId.getTable());
 
             // We specify the columns to be projected by adding them to the selected fields,
             // and set a simple filter to restrict which rows are transmitted.

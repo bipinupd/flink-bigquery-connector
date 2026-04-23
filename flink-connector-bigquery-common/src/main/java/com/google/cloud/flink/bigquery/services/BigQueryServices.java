@@ -244,5 +244,12 @@ public interface BigQueryServices extends Serializable {
          */
         void createTable(
                 String project, String dataset, String table, TableDefinition tableDefinition);
+
+        /**
+         * Returns the underlying BigQuery client.
+         *
+         * @return The BigQuery client.
+         */
+        com.google.cloud.bigquery.BigQuery getBigQuery();
     }
 }

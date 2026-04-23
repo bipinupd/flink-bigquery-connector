@@ -475,6 +475,11 @@ public class BigQueryServicesImpl implements BigQueryServices {
             TableInfo tableInfo = TableInfo.of(tableId, tableDefinition);
             bigQuery.create(tableInfo);
         }
+
+        @Override
+        public com.google.cloud.bigquery.BigQuery getBigQuery() {
+            return bigQuery;
+        }
     }
 
     public static final String generateTraceId(String suffix) {
