@@ -56,6 +56,13 @@ under the License.
             <artifactId>google-cloud-bigquery</artifactId>
         </dependency>
 
+        <!-- Spark BigQuery Connector Common for View Materialization -->
+        <dependency>
+            <groupId>com.google.cloud.spark</groupId>
+            <artifactId>bigquery-connector-common</artifactId>
+            <version>0.44.1</version>
+        </dependency>
+
         <!-- Not directly consumed, kept for shading -->
         <!-- This will be a different version of guava than the one used by Flink -->
         <dependency>

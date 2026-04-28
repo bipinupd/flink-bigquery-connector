@@ -25,6 +25,7 @@ import com.google.api.gax.rpc.ApiException;
 import com.google.api.gax.rpc.StatusCode;
 import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableSchema;
+import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.Dataset;
 import com.google.cloud.bigquery.StandardSQLTypeName;
 import com.google.cloud.bigquery.TableDefinition;
@@ -205,6 +206,26 @@ public class StorageClientFaker {
                                 PartitionType.HOUR,
                                 StandardSQLTypeName.TIMESTAMP,
                                 Instant.now()));
+            }
+
+            @Override
+            public BigQuery getBigQuery() {
+                BigQuery mockBigQuery = org.mockito.Mockito.mock(BigQuery.class);
+                com.google.cloud.bigquery.Table mockTable =
+                        org.mockito.Mockito.mock(com.google.cloud.bigquery.Table.class);
+                TableDefinition mockTableDefinition =
+                        org.mockito.Mockito.mock(TableDefinition.class);
+
+                org.mockito.Mockito.when(
+                                mockBigQuery.getTable(
+                                        org.mockito.Mockito.any(
+                                                com.google.cloud.bigquery.TableId.class)))
+                        .thenReturn(mockTable);
+                org.mockito.Mockito.when(mockTable.getDefinition()).thenReturn(mockTableDefinition);
+                org.mockito.Mockito.when(mockTableDefinition.getType())
+                        .thenReturn(TableDefinition.Type.TABLE);
+
+                return mockBigQuery;
             }
 
             @Override

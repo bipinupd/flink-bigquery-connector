@@ -18,6 +18,12 @@ package com.google.cloud.flink.bigquery.source.split;
 
 import org.apache.flink.annotation.Internal;
 
+import com.google.cloud.bigquery.BigQuery;
+import com.google.cloud.bigquery.Job;
+import com.google.cloud.bigquery.JobInfo;
+import com.google.cloud.bigquery.QueryJobConfiguration;
+import com.google.cloud.bigquery.TableDefinition;
+import com.google.cloud.bigquery.TableId;
 import com.google.cloud.bigquery.storage.v1.CreateReadSessionRequest;
 import com.google.cloud.bigquery.storage.v1.DataFormat;
 import com.google.cloud.bigquery.storage.v1.ReadSession;
@@ -32,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -66,16 +73,67 @@ public class SplitDiscoverer {
             Optional<Long> snapshotTimeInMillis,
             Integer maxStreamCount,
             Integer preferredMinStreamCount) {
+
+        BigQuery bigQuery =
+                BigQueryServicesFactory.instance(connectionOptions).queryClient().getBigQuery();
+        TableId tableId =
+                TableId.of(
+                        connectionOptions.getProjectId(),
+                        connectionOptions.getDataset(),
+                        connectionOptions.getTable());
+        com.google.cloud.bigquery.Table table = bigQuery.getTable(tableId);
+
+        BigQueryConnectOptions optionsToUse = connectionOptions;
+
+        if (table.getDefinition().getType() == TableDefinition.Type.VIEW) {
+            String tempTableName = "temp_view_" + UUID.randomUUID().toString().replace("-", "_");
+            TableId tempTableId =
+                    TableId.of(
+                            connectionOptions.getProjectId(),
+                            connectionOptions.getDataset(),
+                            tempTableName);
+
+            String query =
+                    String.format(
+                            "SELECT * FROM `%s.%s.%s`",
+                            connectionOptions.getProjectId(),
+                            connectionOptions.getDataset(),
+                            connectionOptions.getTable());
+            QueryJobConfiguration queryConfig =
+                    QueryJobConfiguration.newBuilder(query)
+                            .setDestinationTable(tempTableId)
+                            .setWriteDisposition(JobInfo.WriteDisposition.WRITE_TRUNCATE)
+                            .build();
+
+            try {
+                Job queryJob = bigQuery.create(JobInfo.newBuilder(queryConfig).build());
+                queryJob = queryJob.waitFor();
+                if (queryJob.getStatus().getError() != null) {
+                    throw new RuntimeException(
+                            "Failed to materialize view: "
+                                    + queryJob.getStatus().getError().toString());
+                }
+                optionsToUse = connectionOptions.toBuilder().setTable(tempTableName).build();
+                LOG.info(
+                        "Materialized view {} to temporary table {}",
+                        connectionOptions.getTable(),
+                        tempTableName);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Interrupted while materializing view", e);
+            }
+        }
+
         try (BigQueryServices.StorageReadClient client =
-                BigQueryServicesFactory.instance(connectionOptions).storageRead()) {
-            String parent = String.format("projects/%s", connectionOptions.getProjectId());
+                BigQueryServicesFactory.instance(optionsToUse).storageRead()) {
+            String parent = String.format("projects/%s", optionsToUse.getProjectId());
 
             String srcTable =
                     String.format(
                             "projects/%s/datasets/%s/tables/%s",
-                            connectionOptions.getProjectId(),
-                            connectionOptions.getDataset(),
-                            connectionOptions.getTable());
+                            optionsToUse.getProjectId(),
+                            optionsToUse.getDataset(),
+                            optionsToUse.getTable());
 
             // We specify the columns to be projected by adding them to the selected fields,
             // and set a simple filter to restrict which rows are transmitted.

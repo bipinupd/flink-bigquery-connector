@@ -118,6 +118,7 @@ under the License.
                                     <include>commons-codec:commons-codec</include>    
                                     <include>dev.failsafe:*</include>                                
                                     <include>org.apache.avro:*</include>
+                                    <include>io.netty:*</include>
                                     <include>org.apache.httpcomponents:*</include>
                                     <include>org.codehaus.mojo:animal-sniffer-annotations</include>
                                     <include>org.conscrypt:*</include>

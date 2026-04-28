@@ -19,6 +19,7 @@ package com.google.cloud.flink.bigquery.services;
 import org.apache.flink.annotation.Internal;
 
 import com.google.api.services.bigquery.model.TableSchema;
+import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.Dataset;
 import com.google.cloud.bigquery.TableDefinition;
 import com.google.cloud.bigquery.storage.v1.CreateReadSessionRequest;
@@ -175,6 +176,13 @@ public interface BigQueryServices extends Serializable {
      * SQL queries.
      */
     interface QueryDataClient extends Serializable {
+        /**
+         * Returns the underlying BigQuery client.
+         *
+         * @return The BigQuery client.
+         */
+        BigQuery getBigQuery();
+
         /**
          * Returns a list with the table's existing partitions.
          *

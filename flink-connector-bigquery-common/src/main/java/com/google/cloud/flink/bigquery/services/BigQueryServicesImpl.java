@@ -352,6 +352,11 @@ public class BigQueryServicesImpl implements BigQueryServices {
         }
 
         @Override
+        public BigQuery getBigQuery() {
+            return bigQuery;
+        }
+
+        @Override
         public List<String> retrieveTablePartitions(String project, String dataset, String table) {
             try {
                 String query =

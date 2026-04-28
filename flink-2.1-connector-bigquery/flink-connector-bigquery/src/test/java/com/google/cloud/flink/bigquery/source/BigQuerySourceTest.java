@@ -17,6 +17,7 @@
 package com.google.cloud.flink.bigquery.source;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.connector.source.Boundedness;
 import org.apache.flink.formats.avro.typeutils.GenericRecordAvroTypeInfo;
 
 import com.google.cloud.flink.bigquery.fakes.StorageClientFaker;
@@ -40,5 +41,32 @@ public class BigQuerySourceTest {
         TypeInformation<GenericRecord> expected =
                 new GenericRecordAvroTypeInfo(StorageClientFaker.SIMPLE_AVRO_SCHEMA);
         assertThat(source.getDeserializationSchema().getProducedType()).isEqualTo(expected);
+    }
+
+    @Test
+    public void testGetBoundedness() {
+        BigQueryReadOptions readOptions =
+                StorageClientFaker.createReadOptions(
+                        10, 2, StorageClientFaker.SIMPLE_AVRO_SCHEMA_STRING);
+        BigQuerySource<GenericRecord> source = BigQuerySource.readAvros(readOptions);
+        assertThat(source.getBoundedness()).isEqualTo(Boundedness.BOUNDED);
+    }
+
+    @Test
+    public void testGetSplitSerializer() {
+        BigQueryReadOptions readOptions =
+                StorageClientFaker.createReadOptions(
+                        10, 2, StorageClientFaker.SIMPLE_AVRO_SCHEMA_STRING);
+        BigQuerySource<GenericRecord> source = BigQuerySource.readAvros(readOptions);
+        assertThat(source.getSplitSerializer()).isNotNull();
+    }
+
+    @Test
+    public void testGetEnumeratorCheckpointSerializer() {
+        BigQueryReadOptions readOptions =
+                StorageClientFaker.createReadOptions(
+                        10, 2, StorageClientFaker.SIMPLE_AVRO_SCHEMA_STRING);
+        BigQuerySource<GenericRecord> source = BigQuerySource.readAvros(readOptions);
+        assertThat(source.getEnumeratorCheckpointSerializer()).isNotNull();
     }
 }
