@@ -95,9 +95,11 @@ public class SplitDiscovererTest {
         ReadSession mockSession = Mockito.mock(ReadSession.class);
         ReadStream mockStream1 = Mockito.mock(ReadStream.class);
 
-        when(mockStream1.getName()).thenReturn("projects/p/datasets/d/tables/temp_view_123/streams/s1");
+        when(mockStream1.getName())
+                .thenReturn("projects/p/datasets/d/tables/temp_view_123/streams/s1");
         when(mockSession.getStreamsList()).thenReturn(Arrays.asList(mockStream1));
-        when(mockSession.getName()).thenReturn("projects/p/datasets/d/tables/temp_view_123/sessions/sess1");
+        when(mockSession.getName())
+                .thenReturn("projects/p/datasets/d/tables/temp_view_123/sessions/sess1");
         when(mockSession.getExpireTime())
                 .thenReturn(Timestamp.newBuilder().setSeconds(12345).build());
         when(mockClient.createReadSession(any())).thenReturn(mockSession);
@@ -119,7 +121,8 @@ public class SplitDiscovererTest {
         when(mockTableDefinition.getType()).thenReturn(TableDefinition.Type.MATERIALIZED_VIEW);
 
         Job mockJob = Mockito.mock(Job.class);
-        com.google.cloud.bigquery.JobStatus mockStatus = Mockito.mock(com.google.cloud.bigquery.JobStatus.class);
+        com.google.cloud.bigquery.JobStatus mockStatus =
+                Mockito.mock(com.google.cloud.bigquery.JobStatus.class);
         when(mockBigQuery.create(any(JobInfo.class))).thenReturn(mockJob);
         when(mockJob.waitFor()).thenReturn(mockJob);
         when(mockJob.getStatus()).thenReturn(mockStatus);
@@ -145,7 +148,6 @@ public class SplitDiscovererTest {
                         -1,
                         1);
 
-        assertThat(splits)
-                .containsExactly("projects/p/datasets/d/tables/temp_view_123/streams/s1");
+        assertThat(splits).containsExactly("projects/p/datasets/d/tables/temp_view_123/streams/s1");
     }
 }
