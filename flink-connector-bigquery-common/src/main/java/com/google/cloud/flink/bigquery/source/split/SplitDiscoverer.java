@@ -84,8 +84,9 @@ public class SplitDiscoverer {
         com.google.cloud.bigquery.Table table = bigQuery.getTable(tableId);
 
         BigQueryConnectOptions optionsToUse = connectionOptions;
+        TableDefinition.Type tableType = table.getDefinition().getType();
 
-        if (table.getDefinition().getType() == TableDefinition.Type.VIEW) {
+        if (tableType == TableDefinition.Type.VIEW || tableType == TableDefinition.Type.MATERIALIZED_VIEW) {
             String tempTableName = "temp_view_" + UUID.randomUUID().toString().replace("-", "_");
             TableId tempTableId =
                     TableId.of(

@@ -25,9 +25,11 @@ import com.google.api.gax.rpc.ApiException;
 import com.google.api.gax.rpc.StatusCode;
 import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableSchema;
+import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.Dataset;
 import com.google.cloud.bigquery.StandardSQLTypeName;
 import com.google.cloud.bigquery.TableDefinition;
+import com.google.cloud.bigquery.TableId;
 import com.google.cloud.bigquery.storage.v1.AppendRowsResponse;
 import com.google.cloud.bigquery.storage.v1.AvroRows;
 import com.google.cloud.bigquery.storage.v1.AvroSchema;
@@ -152,6 +154,7 @@ public class StorageClientFaker {
             private int tableExistsInvocations;
             private int createDatasetInvocations;
             private int createTableInvocations;
+            private final BigQuery bigQuery;
 
             public FakeQueryDataClient(
                     boolean tableExists,
@@ -167,6 +170,12 @@ public class StorageClientFaker {
                 createTableInvocations = 0;
                 datasetExists = true;
                 datasetRegion = "us-central1";
+                this.bigQuery = Mockito.mock(BigQuery.class);
+                com.google.cloud.bigquery.Table mockTable = Mockito.mock(com.google.cloud.bigquery.Table.class);
+                TableDefinition mockDefinition = Mockito.mock(TableDefinition.class);
+                Mockito.when(mockTable.getDefinition()).thenReturn(mockDefinition);
+                Mockito.when(mockDefinition.getType()).thenReturn(TableDefinition.Type.TABLE);
+                Mockito.when(this.bigQuery.getTable(Mockito.any(TableId.class))).thenReturn(mockTable);
             }
 
             public FakeQueryDataClient(boolean datasetExists, String datasetRegion) {
@@ -176,6 +185,17 @@ public class StorageClientFaker {
                 tableExistsError = null;
                 createDatasetError = null;
                 createTableError = null;
+                this.bigQuery = Mockito.mock(BigQuery.class);
+                com.google.cloud.bigquery.Table mockTable = Mockito.mock(com.google.cloud.bigquery.Table.class);
+                TableDefinition mockDefinition = Mockito.mock(TableDefinition.class);
+                Mockito.when(mockTable.getDefinition()).thenReturn(mockDefinition);
+                Mockito.when(mockDefinition.getType()).thenReturn(TableDefinition.Type.TABLE);
+                Mockito.when(this.bigQuery.getTable(Mockito.any(TableId.class))).thenReturn(mockTable);
+            }
+
+            @Override
+            public BigQuery getBigQuery() {
+                return bigQuery;
             }
 
             static FakeQueryDataClient defaultInstance =
